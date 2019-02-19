@@ -40,18 +40,15 @@ LDSCRIPT = -L $(DIR_LDSCRIPT) -T stm32f410rb_flash.ld
 CC = arm-none-eabi-gcc
 
 
-.PHONY: all directories clean
+.PHONY: all prog clean
 
-all: $(PROJ_NAME)
+all: $(PROJ_NAME).elf
 
-$(PROJ_NAME): $(SRC)
+prog: $(PROJ_NAME).elf
+	openocd -f interface/stlink-v2-1.cfg -f target/stm32f4x.cfg -c "program $^ verify reset exit"
+
+$(PROJ_NAME).elf: $(SRC)
 	$(CC) $(CFLAGS) $(LIBS) $^ -o $@ $(LDSCRIPT)
 
-# $(OBJ): $(SRC)
-# 	$(CC) $(CFLAGS) $^ -c -o $@
-
-$(DIR_BUILD):
-	mkdir -p $(DIR_BUILD)
-
 clean:
-	rm $(OBJ)
+	rm $(PROJ_NAME)
