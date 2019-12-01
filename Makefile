@@ -28,36 +28,26 @@ PROG = openocd
 RM   = rm -f
 
 
-# General gcc compiler flags.
-# Enable all warning, prototypes must have explicit arguments and make all
-# warnings errors
-CFLAGS  = -Wall -Wstrict-prototypes -Werror
-# Do not allow the compiler to assume pointers are not aliases. Lets you play
-# around with c pointer fuckery to your hearts content without worrying about
-# the compiler "optimizing" it all away.
+# Enable a bunch of warnings forcing good coding practice.
+CFLAGS  = -Wall -Wextra -Werror -Wshadow -Wdouble-promotion -Wformat=2 -Wstrict-prototypes -Wno-unused-parameter
+# Allows linker to garbage collect unused sections of code.
+CFLAGS += -ffunction-sections -fdata-sections
+# Stops the compiler from breaking code when fucking around the pointers.
 CFLAGS += -fno-strict-aliasing
-
+# Optimize for binary size.
+CFLAGS += -Os
+# Include bulk debugging info as well as GDB debug symbols.
+CDFLAGS += -g3 -ggdb
+# A libc implimentation optimized for embedded systems.
+CFLAGS += --specs=nano.specs
 # uC specific flags.
 CFLAGS += -mcpu=cortex-m4 -mfloat-abi=soft -mthumb
 # Defines required for the STM drivers.
 CFLAGS += -D STM32F410Rx -D USE_FULL_LL_DRIVER
-CFLAGS += --specs=nosys.specs
+# Garbage collect unused sections of code.
+LDFLAGS += -Wl,--gc-sections
+LDFLAGS += -Wl,--print-memory-usage
 
-# Release flags.
-CRFLAGS  = $(CFLAGS)
-# Allows linker to remove dead code.
-CRFLAGS += -ffunction-sections -fdata-sections -Wl,--gc-sections
-# Optimize binary size.
-CRFLAGS += -Os
-# Optimize binary performance.
-#CRFLAGS += -O3
-
-# Debug flags.
-CDFLAGS  = $(CFLAGS)
-# Add GDB debug symbols.
-CDFLAGS += -ggdb
-# Produces a link map.
-#CDFLAGS += -Wl,-Map=$(PROJ_NAME).map
 
 LIBS  =-I $(DIR_DRIVERS_CMSIS_STM32F4)/inc
 LIBS +=-I $(DIR_DRIVERS_STM_STM32F4)/inc
@@ -77,14 +67,11 @@ all: prog
 prog: $(PROJ_NAME).elf
 	$(PROG) $(PROG_CFG) -c "program $^ verify reset exit"
 
-$(PROJ_NAME).elf: $(SRC)
-	$(CC) $(CRFLAGS) $(LIBS) $^ -o $@ $(LDSCRIPT)
-
-debug: $(PROJ_NAME)_dbg.elf
+debug: $(PROJ_NAME).elf
 	$(GDB) -q --eval-command='target remote | $(PROG) $(PROG_CFG) $(PROG_DBG) -c "program $^ verify reset"' $^
 
-$(PROJ_NAME)_dbg.elf: $(SRC)
-	$(CC) $(CDFLAGS) $(LIBS) $^ -o $@ $(LDSCRIPT)
+$(PROJ_NAME).elf: $(SRC)
+	$(CC) $(CFLAGS) $(LDFLAGS) $(LIBS) $^ -o $@ $(LDSCRIPT)
 
 clean:
-	$(RM) $(PROJ_NAME).elf $(PROJ_NAME)_dbg.elf $(PROJ_NAME).map $(PROJ_NAME)_oocd.log
+	$(RM) $(PROJ_NAME).elf
