@@ -37,7 +37,7 @@ CFLAGS += -fno-strict-aliasing
 # Optimize for binary size.
 CFLAGS += -Os
 # Include bulk debugging info as well as GDB debug symbols.
-CDFLAGS += -g3 -ggdb
+CFLAGS += -g3 -ggdb
 # A libc implimentation optimized for embedded systems.
 CFLAGS += --specs=nano.specs
 # uC specific flags.
